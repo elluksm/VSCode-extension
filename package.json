@@ -10,14 +10,18 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:extension.helloWorld"
+		"onCommand:extension.hello"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "extension.helloWorld",
-				"title": "Hello World"
+				"command": "extension.hello",
+				"title": "Hello from Cat"
+			},
+			{
+				"command": "extension.doRefactor",
+				"title": "Do some refactoring"
 			}
 		]
 	},
