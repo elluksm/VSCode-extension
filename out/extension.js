@@ -3,11 +3,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require("vscode");
-const cats = {
-    'Coding Cat': 'https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif',
-    'Compiling Cat': 'https://media.giphy.com/media/mlvseq9yvZhba/giphy.gif',
-    'Testing Cat': 'https://media.giphy.com/media/3oriO0OEd9QIDdllqo/giphy.gif'
-};
+const cats = [
+    { name: 'Coding', giphy: 'https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif' },
+    { name: 'Compiling', giphy: 'https://media.giphy.com/media/mlvseq9yvZhba/giphy.gif' },
+    { name: 'Testing', giphy: 'https://media.giphy.com/media/3oriO0OEd9QIDdllqo/giphy.gif' }
+];
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 function activate(context) {
@@ -22,7 +22,7 @@ function activate(context) {
     context.subscriptions.push(vscode.commands.registerCommand('extension.hello', () => {
         // The code you place here will be executed every time your command is executed
         // Display a message box to the user
-        vscode.window.showInformationMessage('Hello VS Code!');
+        vscode.window.showInformationMessage('Hello from VS Code Extension!');
         const columnToShowIn = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
         if (currentPanel) {
             // If we already have a panel, show it in the target column
@@ -43,18 +43,21 @@ function activate(context) {
                     case 'alert':
                         vscode.window.showErrorMessage(message.text);
                         return;
+                    case 'refactor':
+                        vscode.window.showInformationMessage(message.text);
+                        return;
                 }
             });
             let iteration = 0;
             const updateWebview = () => {
-                const cat = iteration++ % 2 ? 'Compiling Cat' : 'Coding Cat';
+                const catNumber = iteration++ % 3;
                 if (currentPanel) {
-                    updateWebviewForCat(currentPanel, cat);
+                    currentPanel.webview.html = getWebviewContent(catNumber);
                 }
             };
             //Set initial content
             updateWebview();
-            const interval = setInterval(updateWebview, 2000);
+            const interval = setInterval(updateWebview, 3000);
             // Reset when the current panel is closed
             currentPanel.onDidDispose(() => {
                 //when the panel is closed, cancel any future updates to the webview content
@@ -72,11 +75,7 @@ function activate(context) {
     }));
 }
 exports.activate = activate;
-function updateWebviewForCat(panel, catName) {
-    panel.title = catName;
-    panel.webview.html = getWebviewContent(catName);
-}
-function getWebviewContent(cat) {
+function getWebviewContent(catNumber) {
     return `<!DOCTYPE html>
 	<html lang="en">
 	<head>
@@ -86,9 +85,9 @@ function getWebviewContent(cat) {
 		<title>Cat Coding</title>
 	</head>
 	<body>
-		<img src="${cats[cat]}" width="300" />
+		<img src="${cats[catNumber].giphy}" width="300" />
 		<h1 id="lines-of-code-counter"> 0 </h1>
-		<p> ${cats[cat]} </p>
+		<p> ${cats[catNumber].name}... </p>
 
 		<script>
 			(function() {
@@ -100,20 +99,28 @@ function getWebviewContent(cat) {
 				let count = previousState ? previousState.count : 0;
 				counter.textContent = count;
 
-				setInterval(() => {
+				if(parseInt(${catNumber}) === 0) {
+					setInterval(updateCounter, 100);
+				} else {
+					setInterval(searchForBugs, 300);
+				}
+				
+				function updateCounter() {
 					counter.textContent = count++;
 
 					//update the saved state
 					vscode.setState({ count });
-
+				}
+				
+				function searchForBugs () {
 					//Alert the extension when our cat introduce a bug
 					if (Math.random() < 0.001 * count) {
 						vscode.postMessage({
 							command: 'alert',
 							text: '🐛  on line ' + count
-						})
+						});
 					}
-				}, 100);
+				}
 
 				//Handle the message inside the webview
 				window.addEventListener('message', event => {
@@ -122,11 +129,17 @@ function getWebviewContent(cat) {
 	
 					switch (message.command) {
 						case 'refactor':
-							count = Math.ceil(count * 0.7);
+							count = Math.ceil(count * 0.6);
 							counter.textContent = count;
+
+							vscode.postMessage({
+								command: 'refactor',
+								text: 'Refactor done successfully. Rows now: ' + count
+							});
+
 							break;
 					}
-				})
+				});
 			}())
 		</script>
 	</body>
